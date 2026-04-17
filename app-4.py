@@ -7,8 +7,16 @@ st.set_page_config(page_title="Durchschnittliche Abverkaufsmengen", layout="wide
 st.title("Berechnung der Ø Abverkaufsmengen pro Woche von Werbeartikeln")
 
 # ──────────────────────────────────────────────
-# Format-Erkennung & Konvertierung
+# Hilfsfunktionen
 # ──────────────────────────────────────────────
+
+def fix_columns(df):
+    """Benennt unnamed / None Spalten in 'Name' um (zweite Spalte)."""
+    cols = list(df.columns)
+    if cols[1] is None or str(cols[1]).startswith("Unnamed"):
+        cols[1] = "Name"
+        df.columns = cols
+    return df
 
 def detect_format(df):
     cols = set(df.columns)
@@ -35,9 +43,6 @@ def convert_original_file(uploaded_file):
 
 def prepare_df(df, fmt):
     df = df.copy()
-    # Name-Spalte kann None heißen wenn zweite Spalte keinen Header hat
-    if None in df.columns:
-        df = df.rename(columns={None: "Name"})
     df["Woche"] = pd.to_numeric(df["Woche"], errors='coerce')
     if fmt in ("neu_mit_umsatz", "neu_ohne_umsatz"):
         df["Menge Aktion"] = pd.to_numeric(df["Menge Aktion"], errors='coerce')
@@ -47,10 +52,6 @@ def prepare_df(df, fmt):
         df["Umsatz ohne Aktion"] = pd.to_numeric(df["Umsatz ohne Aktion"], errors='coerce')
     return df
 
-# ──────────────────────────────────────────────
-# Rundung
-# ──────────────────────────────────────────────
-
 def apply_rounding(series, option):
     if option == 'Aufrunden':
         return series.apply(lambda x: math.ceil(x) if pd.notna(x) else x)
@@ -59,10 +60,6 @@ def apply_rounding(series, option):
     elif option == 'Kaufmännisch runden':
         return series.apply(lambda x: round(x) if pd.notna(x) else x)
     return series.apply(lambda x: round(x, 2) if pd.notna(x) else x)
-
-# ──────────────────────────────────────────────
-# Excel-Download Helper
-# ──────────────────────────────────────────────
 
 def to_excel_bytes(df):
     output = BytesIO()
@@ -84,6 +81,8 @@ if uploaded_file:
     sheet_name = st.sidebar.selectbox("Blatt auswählen", data.sheet_names)
     df_raw = data.parse(sheet_name)
 
+    # WICHTIG: Zuerst Spalten fixen, dann Format erkennen
+    df_raw = fix_columns(df_raw)
     fmt = detect_format(df_raw)
 
     if fmt == "unbekannt":
