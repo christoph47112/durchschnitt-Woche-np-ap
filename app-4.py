@@ -159,7 +159,6 @@ if uploaded_file:
                 result_normal.rename(columns={'Woche': 'Anzahl Wochen'}, inplace=True)
 
                 st.dataframe(result_normal, use_container_width=True)
-                st.info(f"✅ {len(result_normal)} Artikel | {df_normal.shape[0]} Normalpreis-Wochen")
 
                 st.download_button(
                     label="📥 Normalpreis-Ergebnisse herunterladen",
