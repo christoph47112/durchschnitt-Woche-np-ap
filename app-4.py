@@ -11,9 +11,10 @@ st.title("Berechnung der Ø Abverkaufsmengen pro Woche von Werbeartikeln")
 # ──────────────────────────────────────────────
 
 def fix_columns(df):
-    """Benennt unnamed / None Spalten in 'Name' um (zweite Spalte)."""
+    """Benennt die zweite Spalte immer in 'Name' um, egal wie pandas sie nennt."""
     cols = list(df.columns)
-    if cols[1] is None or str(cols[1]).startswith("Unnamed"):
+    # Zweite Spalte heißt je nach Export: None, 'Unnamed: 1', leer, etc.
+    if str(cols[1]).startswith("Unnamed") or cols[1] is None or cols[1] == "":
         cols[1] = "Name"
         df.columns = cols
     return df
@@ -81,7 +82,7 @@ if uploaded_file:
     sheet_name = st.sidebar.selectbox("Blatt auswählen", data.sheet_names)
     df_raw = data.parse(sheet_name)
 
-    # WICHTIG: Zuerst Spalten fixen, dann Format erkennen
+    # WICHTIG: Spalten fixen BEVOR Format erkannt wird
     df_raw = fix_columns(df_raw)
     fmt = detect_format(df_raw)
 
