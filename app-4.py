@@ -4,16 +4,14 @@ from io import BytesIO
 import math
 
 st.set_page_config(page_title="Durchschnittliche Abverkaufsmengen", layout="wide")
-st.title("Berechnung der Ø Abverkaufsmengen pro Woche von Werbeartikeln")
+st.title("Ø Abverkaufsmenge pro Woche von Artikeln")
 
 # ──────────────────────────────────────────────
 # Hilfsfunktionen
 # ──────────────────────────────────────────────
 
 def fix_columns(df):
-    """Benennt die zweite Spalte immer in 'Name' um, egal wie pandas sie nennt."""
     cols = list(df.columns)
-    # Zweite Spalte heißt je nach Export: None, 'Unnamed: 1', leer, etc.
     if str(cols[1]).startswith("Unnamed") or cols[1] is None or cols[1] == "":
         cols[1] = "Name"
         df.columns = cols
@@ -82,7 +80,6 @@ if uploaded_file:
     sheet_name = st.sidebar.selectbox("Blatt auswählen", data.sheet_names)
     df_raw = data.parse(sheet_name)
 
-    # WICHTIG: Spalten fixen BEVOR Format erkannt wird
     df_raw = fix_columns(df_raw)
     fmt = detect_format(df_raw)
 
@@ -100,10 +97,7 @@ if uploaded_file:
     else:
         st.info("📄 Altes Format erkannt (nur Normalpreise)")
 
-    # ──────────────────────────────────────────────
     # Sidebar
-    # ──────────────────────────────────────────────
-
     st.sidebar.title("🔍 Artikel-Filter")
     artikel_filter = st.sidebar.text_input("Nach Artikelnummer filtern (optional)")
     artikel_name_filter = st.sidebar.text_input("Nach Artikelname filtern (optional)")
@@ -120,14 +114,11 @@ if uploaded_file:
     if artikel_name_filter:
         df = df[df['Name'].str.contains(artikel_name_filter, case=False, na=False)]
 
-    # ──────────────────────────────────────────────
-    # TABS
-    # ──────────────────────────────────────────────
-
+    # Tabs
     if fmt in ("neu_mit_umsatz", "neu_ohne_umsatz"):
         tab1, tab2 = st.tabs(["📦 Normalpreis", "🏷️ Aktionspreis"])
 
-        # ── Tab 1: Normalpreis ──
+        # Normalpreis
         with tab1:
             st.subheader("Ø Abverkauf pro Woche – Normalpreis")
             st.caption("Nur Wochen ohne Aktion (Menge Aktion = leer)")
@@ -142,9 +133,7 @@ if uploaded_file:
                 if fmt == "neu_mit_umsatz":
                     agg_dict['Umsatz ohne Aktion'] = 'mean'
 
-                result_normal = df_normal.groupby(
-                    ['Artikel', 'Name'], sort=False
-                ).agg(agg_dict).reset_index()
+                result_normal = df_normal.groupby(['Artikel', 'Name'], sort=False).agg(agg_dict).reset_index()
 
                 result_normal['Ø Menge/Woche'] = apply_rounding(
                     result_normal['Umsatz Menge ohne Aktion'], round_option
@@ -159,6 +148,7 @@ if uploaded_file:
                 result_normal.rename(columns={'Woche': 'Anzahl Wochen'}, inplace=True)
 
                 st.dataframe(result_normal, use_container_width=True)
+                st.info(f"✅ {len(result_normal)} Artikel")
 
                 st.download_button(
                     label="📥 Normalpreis-Ergebnisse herunterladen",
@@ -166,7 +156,7 @@ if uploaded_file:
                     file_name="durchschnitt_normalpreis.xlsx"
                 )
 
-        # ── Tab 2: Aktionspreis ──
+        # Aktionspreis
         with tab2:
             st.subheader("Ø Abverkauf pro Woche – Aktionspreis")
             st.caption("Nur Aktionswochen (Menge Aktion ist gefüllt)")
@@ -180,9 +170,7 @@ if uploaded_file:
                 if fmt == "neu_mit_umsatz":
                     agg_dict['Aktionsumsatz'] = 'mean'
 
-                result_aktion = df_aktion.groupby(
-                    ['Artikel', 'Name'], sort=False
-                ).agg(agg_dict).reset_index()
+                result_aktion = df_aktion.groupby(['Artikel', 'Name'], sort=False).agg(agg_dict).reset_index()
 
                 result_aktion['Ø Menge/Woche (Aktion)'] = apply_rounding(
                     result_aktion['Menge Aktion'], round_option
@@ -197,7 +185,7 @@ if uploaded_file:
                 result_aktion.rename(columns={'Woche': 'Anzahl Aktionswochen'}, inplace=True)
 
                 st.dataframe(result_aktion, use_container_width=True)
-                st.info(f"✅ {len(result_aktion)} Artikel in Aktionen | {df_aktion.shape[0]} Aktionswochen")
+                st.info(f"✅ {len(result_aktion)} Artikel in Aktionen")
 
                 st.download_button(
                     label="📥 Aktionspreis-Ergebnisse herunterladen",
@@ -209,9 +197,7 @@ if uploaded_file:
         # Altes Format
         st.subheader("Ø Abverkaufsmenge pro Woche – Normalpreis")
 
-        result = df.groupby(['Artikel', 'Name'], sort=False).agg(
-            {'Menge': 'mean'}
-        ).reset_index()
+        result = df.groupby(['Artikel', 'Name'], sort=False).agg({'Menge': 'mean'}).reset_index()
         result.rename(columns={'Menge': 'Ø Menge/Woche'}, inplace=True)
         result['Ø Menge/Woche'] = apply_rounding(result['Ø Menge/Woche'], round_option)
 
@@ -224,10 +210,7 @@ if uploaded_file:
             file_name="durchschnittliche_abverkaeufe.xlsx"
         )
 
-# ──────────────────────────────────────────────
 # Footer
-# ──────────────────────────────────────────────
-
 st.markdown("---")
 st.markdown("⚠️ **Hinweis:** Diese Anwendung speichert keine Daten und hat keinen Zugriff auf Ihre Dateien.")
 st.markdown("🌟 **Erstellt von Christoph R. Kaiser mit Hilfe von Künstlicher Intelligenz.**")
